@@ -13,29 +13,29 @@ const EXIT_NODE_WAIT_MS = 60_000
 const EXIT_NODE_POLL_MS = 2_000
 const MAX_MONTHLY_COMPUTE_USD = 5
 
-// https://fly.io/docs/about/pricing/#compute, checked 2026-09-02.
+// https://fly.io/pricing-update/, checked 2026-09-25.
 // flyctl lists regions but does not expose their compute prices.
 const REGION_VM_BUDGETS: Record<
   string,
   { cpus: 1 | 2; memoryMb: 256 | 512; monthlyComputeUsd: number }
 > = {
-  ams: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.04 },
-  arn: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.04 },
-  cdg: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.41 },
-  dfw: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.86 },
-  ewr: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 3.89 },
-  fra: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.49 },
-  gru: { cpus: 1, memoryMb: 256, monthlyComputeUsd: 3.14 },
-  iad: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 3.89 },
-  jnb: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.16 },
-  lax: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.66 },
-  lhr: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.41 },
-  nrt: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.18 },
-  ord: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.86 },
-  sin: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.93 },
-  sjc: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.64 },
-  syd: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.93 },
-  yyz: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.34 },
+  ams: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.56 },
+  arn: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.56 },
+  cdg: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.98 },
+  dfw: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.62 },
+  ewr: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.39 },
+  fra: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.26 },
+  gru: { cpus: 1, memoryMb: 256, monthlyComputeUsd: 3.54 },
+  iad: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.39 },
+  jnb: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.81 },
+  lax: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.43 },
+  lhr: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.98 },
+  nrt: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.83 },
+  ord: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.62 },
+  sin: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.69 },
+  sjc: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.41 },
+  syd: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.69 },
+  yyz: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.89 },
 }
 
 type FlyRegion = {
