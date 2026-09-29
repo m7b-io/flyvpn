@@ -13,29 +13,26 @@ const EXIT_NODE_WAIT_MS = 60_000
 const EXIT_NODE_POLL_MS = 2_000
 const MAX_MONTHLY_COMPUTE_USD = 5
 
-// https://fly.io/pricing-update/, checked 2026-09-25.
+// https://fly.io/pricing-update/, checked 2026-09-29.
 // flyctl lists regions but does not expose their compute prices.
-const REGION_VM_BUDGETS: Record<
-  string,
-  { cpus: 1 | 2; memoryMb: 256 | 512; monthlyComputeUsd: number }
-> = {
-  ams: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.56 },
-  arn: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.56 },
-  cdg: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.98 },
-  dfw: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.62 },
-  ewr: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.39 },
-  fra: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.26 },
-  gru: { cpus: 1, memoryMb: 256, monthlyComputeUsd: 3.54 },
-  iad: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.39 },
-  jnb: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.81 },
-  lax: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.43 },
-  lhr: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.98 },
-  nrt: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.83 },
-  ord: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.62 },
-  sin: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.69 },
-  sjc: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.41 },
-  syd: { cpus: 1, memoryMb: 512, monthlyComputeUsd: 4.69 },
-  yyz: { cpus: 2, memoryMb: 512, monthlyComputeUsd: 4.89 },
+const REGION_VM_BUDGETS: Record<string, { memoryMb: 256 | 512; monthlyComputeUsd: number }> = {
+  ams: { memoryMb: 512, monthlyComputeUsd: 3.84 },
+  arn: { memoryMb: 512, monthlyComputeUsd: 3.84 },
+  cdg: { memoryMb: 512, monthlyComputeUsd: 4.19 },
+  dfw: { memoryMb: 512, monthlyComputeUsd: 4.62 },
+  ewr: { memoryMb: 512, monthlyComputeUsd: 3.69 },
+  fra: { memoryMb: 512, monthlyComputeUsd: 4.26 },
+  gru: { memoryMb: 256, monthlyComputeUsd: 3.54 },
+  iad: { memoryMb: 512, monthlyComputeUsd: 3.69 },
+  jnb: { memoryMb: 512, monthlyComputeUsd: 4.81 },
+  lax: { memoryMb: 512, monthlyComputeUsd: 4.43 },
+  lhr: { memoryMb: 512, monthlyComputeUsd: 4.19 },
+  nrt: { memoryMb: 512, monthlyComputeUsd: 4.83 },
+  ord: { memoryMb: 512, monthlyComputeUsd: 4.62 },
+  sin: { memoryMb: 512, monthlyComputeUsd: 4.69 },
+  sjc: { memoryMb: 512, monthlyComputeUsd: 4.4 },
+  syd: { memoryMb: 512, monthlyComputeUsd: 4.69 },
+  yyz: { memoryMb: 512, monthlyComputeUsd: 4.12 },
 }
 
 type FlyRegion = {
@@ -58,7 +55,7 @@ const command = Bun.argv[2] ?? 'up'
 try {
   switch (command) {
     case 'up':
-      await up()
+      await up({ newMachine: Bun.argv.slice(3).includes('--new') })
       break
     case 'down':
       await down()
@@ -67,7 +64,7 @@ try {
     case '--help':
     case '-h':
       console.log(
-        'flyvpn\n\nCommands:\n  up     Create a Fly exit node and use it locally\n  down   Destroy every flyvpn-prefixed Fly app'
+        'flyvpn\n\nCommands:\n  up         Create or reuse a Fly exit node and use it locally\n  up --new   Create a new exit node and keep existing ones\n  down       Destroy a flyvpn Fly app; choose when multiple exist'
       )
       break
     default:
@@ -82,7 +79,7 @@ function requireCommand(name: string) {
   if (!Bun.which(name)) throw new Error(`Missing required command: ${name}`)
 }
 
-async function up() {
+async function up({ newMachine }: { newMachine: boolean }) {
   ;['fly', 'tailscale'].forEach(requireCommand)
 
   const flyRegions = parseResponseList<{
@@ -108,7 +105,7 @@ async function up() {
   console.log('Available Fly regions:')
   regions.forEach((region, index) => {
     console.log(
-      `${String(index + 1).padStart(2, ' ')}. ${region.code} - ${region.name} (${region.vm.cpus}x/${region.vm.memoryMb} MB, ~$${region.vm.monthlyComputeUsd.toFixed(2)}/month)`
+      `${String(index + 1).padStart(2, ' ')}. ${region.code} - ${region.name} (1x/${region.vm.memoryMb} MB, ~$${region.vm.monthlyComputeUsd.toFixed(2)}/month)`
     )
   })
 
@@ -131,9 +128,10 @@ async function up() {
   }
 
   const appNames = getFlyvpnAppNames()
-  const reusableAppName =
-    appNames.find((name) => name.startsWith(`${APP_PREFIX}${region.code}-`)) ?? null
-  const appNamesToDestroy = appNames.filter((name) => name !== reusableAppName)
+  const reusableAppName = newMachine
+    ? null
+    : (appNames.find((name) => name.startsWith(`${APP_PREFIX}${region.code}-`)) ?? null)
+  const appNamesToDestroy = newMachine ? [] : appNames.filter((name) => name !== reusableAppName)
   const appName =
     reusableAppName ?? `${APP_PREFIX}${region.code}-${Math.random().toString(36).slice(2, 8)}`
   const authKey = reusableAppName === null ? Bun.env.TS_AUTHKEY?.trim() : null
@@ -156,7 +154,7 @@ async function up() {
       'fly',
       'scale',
       'vm',
-      `shared-cpu-${region.vm.cpus}x`,
+      'shared-cpu-1x',
       `--vm-memory=${region.vm.memoryMb}`,
       '-a',
       appName,
@@ -201,7 +199,7 @@ primary_region = ${JSON.stringify(region.code)}
 
 [[vm]]
   cpu_kind = "shared"
-  cpus = ${region.vm.cpus}
+  cpus = 1
   memory_mb = ${region.vm.memoryMb}
 `
       )
@@ -301,18 +299,42 @@ primary_region = ${JSON.stringify(region.code)}
 async function down() {
   ;['fly', 'tailscale'].forEach(requireCommand)
 
+  const appNames = getFlyvpnAppNames()
+
+  let appName = appNames[0]
+
+  if (appNames.length > 1) {
+    console.log('Available flyvpn Fly apps:')
+    appNames.forEach((name, index) => {
+      console.log(`${index + 1}. ${name}`)
+    })
+
+    const rl = createInterface({ input, output })
+    try {
+      while (true) {
+        const answer = (await rl.question('Select an app to delete by number: ')).trim()
+        const index = Number(answer)
+        if (Number.isInteger(index) && index >= 1 && index <= appNames.length) {
+          appName = appNames[index - 1]
+          break
+        }
+        console.log(`Enter a number between 1 and ${appNames.length}.`)
+      }
+    } finally {
+      rl.close()
+    }
+  }
+
   if (run(['tailscale', 'set', '--exit-node='], true).exitCode === 0) {
     console.log('Cleared the local Tailscale exit node.')
   }
-
-  const appNames = getFlyvpnAppNames()
 
   if (appNames.length === 0) {
     console.log('No flyvpn Fly apps found.')
     return
   }
 
-  await destroyFlyvpnApps(appNames)
+  await destroyFlyvpnApps([appName])
 
   console.log('')
   console.log('Fly cleanup complete.')

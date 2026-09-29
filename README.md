@@ -21,7 +21,9 @@ https://github.com/user-attachments/assets/cb4662af-c52e-4d40-be69-a59b5cde4119
 - selects the exit node on your Mac
 - removes old `flyvpn-*` apps when you change regions
 
-`bun run down` clears the local exit node and destroys all `flyvpn-*` apps.
+`bun run up --new` creates a new exit node and keeps existing `flyvpn-*` apps, even in the same region.
+
+`bun run down` clears the local exit node and destroys one `flyvpn-*` app. When multiple apps exist, it asks which one to delete.
 
 ## Prerequisites
 
@@ -82,6 +84,14 @@ bun run up
 
 Select a region. `flyvpn` creates the exit node and selects it in Tailscale.
 
+To create another exit node while keeping existing ones:
+
+```sh
+bun run up --new
+```
+
+This requires `TS_AUTHKEY` and selects the new exit node locally. Running `bun run up` without `--new` still removes the other apps.
+
 If the exit node does not appear within 60 seconds, approve it in the Tailscale admin console. Then run the command shown by `flyvpn`.
 
 ## Stop the VPN
@@ -90,7 +100,7 @@ If the exit node does not appear within 60 seconds, approve it in the Tailscale 
 bun run down
 ```
 
-This command destroys every Fly.io app whose name starts with `flyvpn-`. Do not use that prefix for other apps.
+If multiple `flyvpn-*` apps exist, select the one to delete. If only one exists, the command deletes it directly. Do not use the `flyvpn-` prefix for other apps.
 
 ## License
 
